@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PiantaFacile</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --paper: #f5f0e8;
+  --paper2: #ede8de;
+  --ink: #1a1510;
+  --ink2: #5a5040;
+  --accent: #c0392b;
+  --accent2: #2980b9;
+  --grid: #d8d0c0;
+  --wall: #2c2520;
+  --panel: #1a1510;
+}
+
+body {
+  font-family: 'IBM Plex Mono', monospace;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  color: var(--paper);
+}
+
+/* TOPBAR */
+header {
+  height: 50px;
+  background: #111;
+  border-bottom: 1px solid #333;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  color: var(--paper);
+  letter-spacing: -0.5px;
+}
+.logo span { color: var(--accent); }
+
+.tool-group {
+  display: flex;
+  gap: 4px;
+  margin-left: 16px;
+}
+
+.tool-btn {
+  background: #222;
+  border: 1px solid #444;
+  color: #aaa;
+  padding: 5px 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.1s;
+  white-space: nowrap;
+}
+.tool-btn:hover { border-color: #888; color: #eee; }
+.tool-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+.sep { width: 1px; background: #333; margin: 8px 4px; }
+
+.stat {
+  font-size: 11px;
+  color: #666;
+  margin-left: auto;
+}
+.stat span { color: #ccc; }
+
+/* MAIN LAYOUT */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 180px;
+  background: #111;
+  border-right: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-thumb { background: #333; }
+
+.cat-title {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #555;
+  text-transform: uppercase;
+  padding: 14px 14px 6px;
+}
+
+.furniture-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px 8px;
+}
+
+.furn-btn {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 5px;
+  padding: 8px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #aaa;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  transition: all 0.1s;
+  text-align: left;
+  width: 100%;
+}
+.furn-btn:hover { background: #222; border-color: #555; color: #eee; }
+.furn-btn.selected { border-color: var(--accent); color: white; background: #2a1a1a; }
+
+.furn-icon {
+  width: 28px; height: 28px;
+  border-radius: 4px;
+  background: #252525;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* CANVAS AREA */
+.canvas-wrap {
+  flex: 1;
+  overflow: auto;
+  background: #222;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 20px;
+  position: relative;
+}
+
+canvas#floorCanvas {
+  cursor: crosshair;
+  display: block;
+  image-rendering: pixelated;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+}
+
+/* RIGHT PANEL */
+.right-panel {
+  width: 200px;
+  background: #111;
+  border-left: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.rpanel-section {
+  border-bottom: 1px solid #2a2a2a;
+  padding: 14px;
+}
+
+.rpanel-title {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #555;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.prop-row {
+  margin-bottom: 8px;
+}
+.prop-label {
+  font-size: 10px;
+  color: #666;
+  margin-bottom: 3px;
+  display: flex;
+  justify-content: space-between;
+}
+.prop-label span { color: #aaa; }
+.prop-row input[type=range] {
+  width: 100%;
+  accent-color: var(--accent);
+  height: 3px;
+  cursor: pointer;
+}
+
+.color-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+.cswatch {
+  width: 20px; height: 20px;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.1s;
+}
+.cswatch:hover, .cswatch.active { border-color: white; transform: scale(1.15); }
+
+.del-btn {
+  width: 100%;
+  padding: 7px;
+  background: #2a0a0a;
+  border: 1px solid #5a1a1a;
+  color: #f06060;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  margin-top: 6px;
+  transition: all 0.1s;
+}
+.del-btn:hover { background: #3a0a0a; }
+
+.no-sel { font-size: 11px; color: #444; text-align: center; padding: 10px 0; line-height: 1.6; }
+
+.hint-box {
+  background: #0d0d0d;
+  border: 1px solid #2a2a2a;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 10px;
+  color: #555;
+  line-height: 1.8;
+  margin-top: auto;
+  margin: 14px;
+}
+.hint-box b { color: #888; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Pianta<span>Facile</span></div>
+
+  <div class="tool-group">
+    <button class="tool-btn active" id="btnSelect" onclick="setTool('select')">↖ Seleziona</button>
+    <button class="tool-btn" id="btnWall" onclick="setTool('wall')">▬ Muro</button>
+    <button class="tool-btn" id="btnRoom" onclick="setTool('room')">⬜ Stanza</button>
+    <button class="tool-btn" id="btnDoor" onclick="setTool('door')">🚪 Porta</button>
+    <button class="tool-btn" id="btnWindow" onclick="setTool('window')">🪟 Finestra</button>
+  </div>
+
+  <div class="sep"></div>
+
+  <button class="tool-btn" onclick="undoLast()">↩ Annulla</button>
+  <button class="tool-btn" onclick="clearAll()">✕ Pulisci</button>
+  <button class="tool-btn" onclick="exportPNG()" style="border-color:#2980b9;color:#2980b9;">⬇ Esporta</button>
+
+  <div class="stat">Scala: <span>1px = 5cm</span> &nbsp;|&nbsp; Area: <span id="areaInfo">—</span></div>
+</header>
+
+<div class="main">
+  <!-- SIDEBAR MOBILI -->
+  <div class="sidebar">
+    <div class="cat-title">Struttura</div>
+    <div class="furniture-list">
+      <button class="furn-btn" onclick="selectFurniture('stanza')" id="fi_stanza">
+        <div class="furn-icon">⬜</div>Stanza
+      </button>
+      <button class="furn-btn" onclick="selectFurniture('bagno')" id="fi_bagno">
+        <div class="furn-icon">🚿</div>Bagno
+      </button>
+      <button class="furn-btn" onclick="selectFurniture('cucina')" id="fi_cucina">
+        <div class="furn-icon">🍳</div>Cucina
+      </button>
+    </div>
+
+    <div class="cat-title">Soggiorno</div>
+    <div class="furniture-list">
+      <button class="furn-btn" onclick="selectFurniture('divano')" id="fi_divano">
+        <div class="furn-icon">🛋️</div>Divano
+      </button>
+      <button class="furn-btn" onclick="selectFurniture('tavolino')" id="fi_tavolino">
+        <div class="furn-icon">☕</div>Tavolino
+      </button>
+      <button class="furn-btn" onclick="selectFurniture('tv')" id="fi_tv">
+        <div class="furn-icon">📺</div>TV
+      </button>
+      <button class="furn-btn" onclick="selectFurniture('pianta')" id="fi_pianta">
+        <div class="furn-icon">🌿</div>Pianta
+      </button>
+    </div>
+
+    <div class="cat-title">Camera</div>
+    <div class="furniture-list">
+      <button class="furn-btn" onclick="selectFurniture('letto')" id="fi_letto">
+        <div class="furn-icon">🛏️</div>Letto
+      </button>
+      <button class="furn-btn" onclick="selectFurniture('armadio')" id="fi_armadio">
+        <div class="furn-icon">🚪</div>Armadio
+      </button>
+      <button class="furn-btn" onclick="selectFurniture('comodino')" id="fi_comodino">
+        <div class="furn-icon">🕯️</div>Comodino
+      </button>
+      <button class="furn-btn" onclick="selectFurniture('scrivania')" id="fi_scrivania">
+        <div class="furn-icon">🖥️</div>Scrivania
+      </button>
+    </div>
+
+    <div class="cat-title">Pranzo</div>
+    <div class="furniture-list">
+      <button class="furn-btn" onclick="selectFurniture('tavolo4')" id="fi_tavolo4">
+        <div class="furn-icon">🪑</div>Tavolo 4p
+      </button>
+      <button class="furn-btn" onclick="selectFurniture('tavolo6')" id="fi_tavolo6">
+        <div class="furn-icon">🪑</div>Tavolo 6p
+      </button>
+    </div>
+
+    <div class="cat-title">Bagno</div>
+    <div class="furniture-list">
+      <button class="furn-btn" onclick="selectFurniture('vasca')" id="fi_vasca">
+        <div class="furn-icon">🛁</div>Vasca
+      </button>
+      <button class="furn-btn" onclick="selectFurniture('wc')" id="fi_wc">
+        <div class="furn-icon">🚽</div>WC
+      </button>
+      <button class="furn-btn" onclick="selectFurniture('lavandino')" id="fi_lavandino">
+        <div class="furn-icon">🚿</div>Lavandino
+      </button>
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div class="canvas-wrap" id="canvasWrap">
+    <canvas id="floorCanvas" width="1200" height="900"></canvas>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="rpanel-section">
+      <div class="rpanel-title">Oggetto</div>
+      <div id="noSel" class="no-sel">Clicca un oggetto<br>per modificarlo</div>
+      <div id="selProps" style="display:none">
+        <div class="prop-row">
+          <div class="prop-label">Larghezza <span id="wLbl">—</span></div>
+          <input type="range" id="wSlider" min="20" max="300" oninput="resizeSel('w',this.value)">
+        </div>
+        <div class="prop-row">
+          <div class="prop-label">Altezza <span id="hLbl">—</span></div>
+          <input type="range" id="hSlider" min="20" max="300" oninput="resizeSel('h',this.value)">
+        </div>
+        <div class="prop-row">
+          <div class="prop-label">Rotazione <span id="rLbl">0°</span></div>
+          <input type="range" id="rSlider" min="0" max="3" step="1" value="0" oninput="rotateSel(this.value)">
+        </div>
+        <div class="rpanel-title" style="margin-top:10px">Colore</div>
+        <div class="color-row" id="colorSwatches"></div>
+        <button class="del-btn" onclick="deleteSel()">✕ Elimina</button>
+      </div>
+    </div>
+
+    <div class="rpanel-section">
+      <div class="rpanel-title">Griglia</div>
+      <div class="prop-row">
+        <div class="prop-label">Dimensione <span id="gridLbl">20px</span></div>
+        <input type="range" id="gridSlider" min="10" max="40" value="20" oninput="setGrid(this.value)">
+      </div>
+    </div>
+
+    <div class="hint-box">
+      <b>Strumento attivo:</b> <span id="toolHint">Seleziona</span><br><br>
+      <b>Muro/Stanza:</b> click+drag<br>
+      <b>Mobili:</b> seleziona dalla lista → click sulla pianta<br>
+      <b>Sposta:</b> drag oggetto<br>
+      <b>Canc:</b> elimina sel.
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('floorCanvas');
+const ctx = canvas.getContext('2d');
+
+// ── STATE ──────────────────────────────────────────────────
+let GRID = 20;
+let tool = 'select';
+let activeFurniture = null; // nome mobile da piazzare
+let objects = [];       // tutti gli oggetti sulla pianta
+let selected = null;    // oggetto selezionato
+let history = [];       // per undo
+
+// Drag state
+let dragging = false;
+let dragObj = null;
+let dragOffX = 0, dragOffY = 0;
+
+// Draw state (muri/stanze)
+let drawing = false;
+let drawStart = null;
+
+// ── DEFINIZIONI MOBILI ─────────────────────────────────────
+const COLORS = ['#e8dcc8','#c8d8e8','#c8e8d0','#e8c8c8','#d8c8e8','#e8e0b8','#a0b0c0','#c09080'];
+
+const FURNITURE_DEF = {
+  // Strutture
+  stanza:    { w:200, h:160, label:'Stanza',   draw: drawRoom,     color:'#e8e4da' },
+  bagno:     { w:120, h:100, label:'Bagno',    draw: drawBagno,    color:'#d8eef4' },
+  cucina:    { w:180, h:80,  label:'Cucina',   draw: drawCucina,   color:'#fdf6e3' },
+  // Soggiorno
+  divano:    { w:120, h:50,  label:'Divano',   draw: drawDivano,   color:'#a0b8d0' },
+  tavolino:  { w:60,  h:40,  label:'Tavolino', draw: drawTavolino, color:'#c8a870' },
+  tv:        { w:80,  h:14,  label:'TV',       draw: drawTV,       color:'#303030' },
+  pianta:    { w:24,  h:24,  label:'Pianta',   draw: drawPianta,   color:'#4a8040' },
+  // Camera
+  letto:     { w:100, h:80,  label:'Letto',    draw: drawLetto,    color:'#e8e0d0' },
+  armadio:   { w:90,  h:30,  label:'Armadio',  draw: drawArmadio,  color:'#c8b890' },
+  comodino:  { w:28,  h:28,  label:'Comodino', draw: drawComodino, color:'#c8a870' },
+  scrivania: { w:80,  h:40,  label:'Scrivania',draw: drawScrivania,color:'#b8a888' },
+  // Pranzo
+  tavolo4:   { w:80,  h:60,  label:'Tavolo 4p',draw: drawTavolo4,  color:'#c8a870' },
+  tavolo6:   { w:120, h:70,  label:'Tavolo 6p',draw: drawTavolo6,  color:'#c8a870' },
+  // Bagno
+  vasca:     { w:90,  h:50,  label:'Vasca',    draw: drawVasca,    color:'#e8f4f8' },
+  wc:        { w:36,  h:50,  label:'WC',       draw: drawWC,       color:'#f0f0f0' },
+  lavandino: { w:36,  h:30,  label:'Lavandino',draw: drawLavandino,color:'#e8f4f8' },
+};
+
+// ── TOOL FUNCS ─────────────────────────────────────────────
+function setTool(t) {
+  tool = t;
+  activeFurniture = null;
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');
+  document.getElementById('toolHint').textContent = {
+    select:'Seleziona', wall:'Disegna Muro', room:'Disegna Stanza', door:'Aggiungi Porta', window:'Aggiungi Finestra'
+  }[t];
+  document.querySelectorAll('.furn-btn').forEach(b => b.classList.remove('selected'));
+  canvas.style.cursor = t === 'select' ? 'default' : 'crosshair';
+  render();
+}
+
+function selectFurniture(id) {
+  activeFurniture = id;
+  tool = 'place';
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.furn-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('fi_'+id).classList.add('selected');
+  document.getElementById('toolHint').textContent = 'Clicca per piazzare: '+FURNITURE_DEF[id].label;
+  canvas.style.cursor = 'crosshair';
+  deselectObj();
+}
+
+// ── SNAPPING ───────────────────────────────────────────────
+function snap(v) { return Math.round(v / GRID) * GRID; }
+function setGrid(v) {
+  GRID = parseInt(v);
+  document.getElementById('gridLbl').textContent = v+'px';
+  render();
+}
+
+// ── MOUSE EVENTS ───────────────────────────────────────────
+canvas.addEventListener('mousedown', onDown);
+canvas.addEventListener('mousemove', onMove);
+canvas.addEventListener('mouseup', onUp);
+
+function getPos(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+function onDown(e) {
+  const p = getPos(e);
+
+  // PLACE FURNITURE
+  if (tool === 'place' && activeFurniture) {
+    saveHistory();
+    const def = FURNITURE_DEF[activeFurniture];
+    const obj = {
+      id: activeFurniture,
+      x: snap(p.x - def.w/2), y: snap(p.y - def.h/2),
+      w: def.w, h: def.h,
+      rot: 0,
+      color: def.color,
+      label: def.label
+    };
+    objects.push(obj);
+    selectObj(obj);
+    render();
+    return;
+  }
+
+  // PLACE DOOR / WINDOW (simple)
+  if (tool === 'door' || tool === 'window') {
+    saveHistory();
+    const size = tool === 'door' ? {w:20,h:4} : {w:24,h:4};
+    objects.push({ id: tool, x: snap(p.x - size.w/2), y: snap(p.y - size.h/2), w: size.w, h: size.h, rot: 0, color: tool==='door'?'#8B4513':'#add8f0', label: tool==='door'?'Porta':'Finestra' });
+    render();
+    return;
+  }
+
+  // DRAW WALL / ROOM
+  if (tool === 'wall' || tool === 'room') {
+    drawing = true;
+    drawStart = { x: snap(p.x), y: snap(p.y) };
+    return;
+  }
+
+  // SELECT / DRAG
+  if (tool === 'select') {
+    // Hit test (reverse for top-most)
+    let hit = null;
+    for (let i = objects.length-1; i >= 0; i--) {
+      const o = objects[i];
+      const [bx,by,bw,bh] = getBounds(o);
+      if (p.x >= bx && p.x <= bx+bw && p.y >= by && p.y <= by+bh) {
+        hit = o; break;
+      }
+    }
+    if (hit) {
+      selectObj(hit);
+      dragging = true;
+      dragObj = hit;
+      const [bx,by] = getBounds(hit);
+      dragOffX = p.x - bx;
+      dragOffY = p.y - by;
+    } else {
+      deselectObj();
+    }
+    render();
+  }
+}
+
+function onMove(e) {
+  const p = getPos(e);
+
+  if (dragging && dragObj) {
+    dragObj.x = snap(p.x - dragOffX);
+    dragObj.y = snap(p.y - dragOffY);
+    render();
+    return;
+  }
+
+  if (drawing && drawStart) {
+    render();
+    const x = snap(p.x), y = snap(p.y);
+    const x1 = Math.min(drawStart.x, x), y1 = Math.min(drawStart.y, y);
+    const w = Math.abs(x - drawStart.x), h = Math.abs(y - drawStart.y);
+    ctx.save();
+    if (tool === 'wall') {
+      ctx.strokeStyle = '#2c2520'; ctx.lineWidth = 8; ctx.lineCap = 'square';
+      ctx.beginPath(); ctx.moveTo(drawStart.x, drawStart.y); ctx.lineTo(x, y); ctx.stroke();
+    } else {
+      ctx.strokeStyle = '#2c2520'; ctx.lineWidth = 8; ctx.fillStyle = 'rgba(200,195,185,0.25)';
+      ctx.fillRect(x1, y1, w, h);
+      ctx.strokeRect(x1+4, y1+4, w-8, h-8);
+    }
+    ctx.restore();
+  }
+}
+
+function onUp(e) {
+  const p = getPos(e);
+
+  if (dragging) {
+    saveHistory();
+    dragging = false;
+    dragObj = null;
+    render();
+    return;
+  }
+
+  if (drawing && drawStart) {
+    saveHistory();
+    const x = snap(p.x), y = snap(p.y);
+    const x1 = Math.min(drawStart.x, x), y1 = Math.min(drawStart.y, y);
+    const w = Math.abs(x - drawStart.x), h = Math.abs(y - drawStart.y);
+    if (w > 4 || h > 4) {
+      if (tool === 'wall') {
+        objects.push({ id:'wall', x:drawStart.x, y:drawStart.y, x2:x, y2:y, color:'#2c2520', label:'Muro' });
+      } else {
+        objects.push({ id:'room', x:x1, y:y1, w:Math.max(w,20), h:Math.max(h,20), rot:0, color:'#e8e4da', label:'Stanza' });
+      }
+    }
+    drawing = false;
+    drawStart = null;
+    render();
+  }
+}
+
+// Keyboard delete
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selected) { deleteSel(); }
+});
+
+// ── BOUNDS ────────────────────────────────────────────────
+function getBounds(o) {
+  if (o.id === 'wall') {
+    const x = Math.min(o.x, o.x2)-6, y = Math.min(o.y, o.y2)-6;
+    const w = Math.abs(o.x2-o.x)+12, h = Math.abs(o.y2-o.y)+12;
+    return [x, y, w, h];
+  }
+  return [o.x, o.y, o.w, o.h];
+}
+
+// ── SELECTION ─────────────────────────────────────────────
+function selectObj(o) {
+  selected = o;
+  document.getElementById('noSel').style.display = 'none';
+  document.getElementById('selProps').style.display = 'block';
+  if (o.w) {
+    document.getElementById('wSlider').value = o.w;
+    document.getElementById('hSlider').value = o.h;
+    document.getElementById('wLbl').textContent = Math.round(o.w/GRID*0.05*100)/100+'m';
+    document.getElementById('hLbl').textContent = Math.round(o.h/GRID*0.05*100)/100+'m';
+    document.getElementById('rSlider').value = o.rot||0;
+    document.getElementById('rLbl').textContent = (o.rot||0)*90+'°';
+  }
+  buildColorSwatches(o);
+  updateAreaInfo();
+}
+
+function deselectObj() {
+  selected = null;
+  document.getElementById('noSel').style.display = 'block';
+  document.getElementById('selProps').style.display = 'none';
+}
+
+function deleteSel() {
+  if (!selected) return;
+  saveHistory();
+  objects = objects.filter(o => o !== selected);
+  deselectObj();
+  render();
+}
+
+function resizeSel(axis, val) {
+  if (!selected || !selected.w) return;
+  selected[axis] = parseInt(val);
+  document.getElementById(axis+'Lbl').textContent = Math.round(val/GRID*0.05*100)/100+'m';
+  updateAreaInfo();
+  render();
+}
+
+function rotateSel(val) {
+  if (!selected) return;
+  selected.rot = parseInt(val);
+  document.getElementById('rLbl').textContent = val*90+'°';
+  if (selected.rot % 2 !== 0) {
+    const tmp = selected.w; selected.w = selected.h; selected.h = tmp;
+  }
+  render();
+}
+
+function buildColorSwatches(o) {
+  const el = document.getElementById('colorSwatches');
+  el.innerHTML = COLORS.map(c => `
+    <div class="cswatch ${o.color===c?'active':''}" style="background:${c}"
+      onclick="setColor('${c}', this)"></div>
+  `).join('') + `<input type="color" value="${o.color||'#cccccc'}" style="width:20px;height:20px;border:none;padding:0;cursor:pointer;border-radius:3px;" oninput="setColor(this.value, this)">`;
+}
+
+function setColor(c, el) {
+  if (!selected) return;
+  selected.color = c;
+  document.querySelectorAll('.cswatch').forEach(s => s.classList.remove('active'));
+  if (el.classList) el.classList.add('active');
+  render();
+}
+
+function updateAreaInfo() {
+  const rooms = objects.filter(o => o.id === 'room' || (FURNITURE_DEF[o.id] && o.id !== 'wall'));
+  const total = rooms.reduce((s,o) => s + (o.w||0)*(o.h||0), 0);
+  const m2 = (total / (GRID/0.05)**2 * GRID**2 / 40000).toFixed(1);
+  document.getElementById('areaInfo').textContent = m2+' m²';
+}
+
+// ── DRAW FUNCTIONS ────────────────────────────────────────
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawBackground();
+  drawGridLines();
+  objects.forEach(o => { if (o.id === 'room') drawObj(o); });
+  objects.forEach(o => { if (o.id !== 'room') drawObj(o); });
+  if (selected) drawSelection(selected);
+}
+
+function drawBackground() {
+  ctx.fillStyle = '#f5f0e8';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawGridLines() {
+  ctx.strokeStyle = '#e0d8c8';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < canvas.width; x += GRID) {
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke();
+  }
+  for (let y = 0; y < canvas.height; y += GRID) {
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke();
+  }
+}
+
+function drawObj(o) {
+  if (o.id === 'wall') {
+    ctx.save();
+    ctx.strokeStyle = o.color||'#2c2520';
+    ctx.lineWidth = 8; ctx.lineCap = 'square';
+    ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x2, o.y2); ctx.stroke();
+    ctx.restore();
+    return;
+  }
+  ctx.save();
+  ctx.translate(o.x + o.w/2, o.y + o.h/2);
+  const def = FURNITURE_DEF[o.id];
+  if (def && def.draw) {
+    def.draw(ctx, -o.w/2, -o.h/2, o.w, o.h, o.color);
+  } else {
+    drawGeneric(ctx, -o.w/2, -o.h/2, o.w, o.h, o.color, o.label);
+  }
+  // Label
+  ctx.fillStyle = 'rgba(30,20,10,0.55)';
+  ctx.font = `${Math.min(11, o.w/6)}px IBM Plex Mono`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(o.label||'', 0, 0);
+  ctx.restore();
+}
+
+function drawSelection(o) {
+  const [bx,by,bw,bh] = getBounds(o);
+  ctx.save();
+  ctx.strokeStyle = '#c0392b';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5,4]);
+  ctx.strokeRect(bx-3, by-3, bw+6, bh+6);
+  // Handles
+  ctx.fillStyle = '#c0392b';
+  ctx.setLineDash([]);
+  [[bx-3,by-3],[bx+bw+3,by-3],[bx-3,by+bh+3],[bx+bw+3,by+bh+3]].forEach(([hx,hy]) => {
+    ctx.fillRect(hx-4, hy-4, 8, 8);
+  });
+  ctx.restore();
+}
+
+// DRAW HELPERS
+function drawGeneric(ctx, x, y, w, h, color, label) {
+  ctx.fillStyle = color||'#ddd';
+  ctx.strokeStyle = '#2c2520';
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeRect(x, y, w, h);
+}
+
+function drawRoom(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color||'#e8e4da';
+  ctx.strokeStyle = '#2c2520';
+  ctx.lineWidth = 8;
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeRect(x+4, y+4, w-8, h-8);
+}
+
+function drawBagno(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color||'#d8eef4';
+  ctx.strokeStyle = '#2c2520';
+  ctx.lineWidth = 8;
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeRect(x+4, y+4, w-8, h-8);
+  // tile hint
+  ctx.strokeStyle = 'rgba(100,180,210,0.25)'; ctx.lineWidth = 0.5;
+  const ts = 12;
+  for(let tx=x;tx<x+w;tx+=ts) { ctx.beginPath();ctx.moveTo(tx,y);ctx.lineTo(tx,y+h);ctx.stroke(); }
+  for(let ty=y;ty<y+h;ty+=ts) { ctx.beginPath();ctx.moveTo(x,ty);ctx.lineTo(x+w,ty);ctx.stroke(); }
+}
+
+function drawCucina(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color||'#fdf6e3';
+  ctx.strokeStyle = '#2c2520'; ctx.lineWidth = 8;
+  ctx.fillRect(x, y, w, h); ctx.strokeRect(x+4,y+4,w-8,h-8);
+  // counter
+  ctx.fillStyle = '#d0c8a0'; ctx.strokeStyle = '#9a9070'; ctx.lineWidth = 1;
+  ctx.fillRect(x+8, y+8, w-16, 14); ctx.strokeRect(x+8, y+8, w-16, 14);
+  // Burners
+  ctx.strokeStyle = '#888'; ctx.lineWidth = 1.5;
+  for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(x+20+i*(w-40)/2,y+20,5,0,Math.PI*2);ctx.stroke();}
+}
+
+function drawDivano(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color||'#a0b8d0'; ctx.strokeStyle = '#5a7090'; ctx.lineWidth = 1.5;
+  ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h);
+  // backrest
+  ctx.fillStyle = darken(color||'#a0b8d0',20);
+  ctx.fillRect(x, y, w, h*0.25); ctx.strokeRect(x,y,w,h*0.25);
+  // armrests
+  ctx.fillRect(x, y+h*0.25, w*0.12, h*0.75); ctx.strokeRect(x,y+h*0.25,w*0.12,h*0.75);
+  ctx.fillRect(x+w*0.88, y+h*0.25, w*0.12, h*0.75); ctx.strokeRect(x+w*0.88,y+h*0.25,w*0.12,h*0.75);
+  // cushions
+  const cw = (w*0.76)/3;
+  for(let i=0;i<3;i++){
+    ctx.fillStyle = lighten(color||'#a0b8d0',10);
+    ctx.fillRect(x+w*0.12+i*cw+1, y+h*0.3, cw-2, h*0.65);
+    ctx.strokeRect(x+w*0.12+i*cw+1, y+h*0.3, cw-2, h*0.65);
+  }
+}
+
+function drawTavolino(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color||'#c8a870'; ctx.strokeStyle = '#8a6830'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.ellipse(x+w/2,y+h/2,w/2-2,h/2-2,0,0,Math.PI*2);
+  ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(100,60,0,0.2)';
+  ctx.beginPath(); ctx.ellipse(x+w/2,y+h/2,w/2-6,h/2-6,0,0,Math.PI*2); ctx.stroke();
+}
+
+function drawTV(ctx, x, y, w, h, color) {
+  ctx.fillStyle = '#111'; ctx.strokeStyle = '#444'; ctx.lineWidth = 1;
+  ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h);
+  ctx.fillStyle = '#1a2a3a'; ctx.fillRect(x+2,y+2,w-4,h-4);
+  ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(x+2,y+2,w-4,(h-4)/2);
+}
+
+function drawLetto(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color||'#e8e0d0'; ctx.strokeStyle = '#8a7860'; ctx.lineWidth = 1.5;
+  ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h);
+  // headboard
+  ctx.fillStyle = '#c8a870'; ctx.fillRect(x,y,w,h*0.14); ctx.strokeRect(x,y,w,h*0.14);
+  // pillows
+  ctx.fillStyle = '#f8f4ec'; ctx.strokeStyle = '#c0b8a8'; ctx.lineWidth = 1;
+  ctx.fillRect(x+w*0.1, y+h*0.16, w*0.35, h*0.22); ctx.strokeRect(x+w*0.1,y+h*0.16,w*0.35,h*0.22);
+  ctx.fillRect(x+w*0.55, y+h*0.16, w*0.35, h*0.22); ctx.strokeRect(x+w*0.55,y+h*0.16,w*0.35,h*0.22);
+  // blanket
+  ctx.fillStyle = '#b0c0d8'; ctx.strokeStyle = '#8090a8'; ctx.lineWidth = 1;
+  ctx.fillRect(x+w*0.05, y+h*0.4, w*0.9, h*0.55); ctx.strokeRect(x+w*0.05,y+h*0.4,w*0.9,h*0.55);
+}
+
+function drawArmadio(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color||'#c8b890'; ctx.strokeStyle = '#8a7050'; ctx.lineWidth = 1.5;
+  ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h);
+  ctx.strokeStyle = '#7a6040'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x+w/2,y); ctx.lineTo(x+w/2,y+h); ctx.stroke();
+  // Handles
+  ctx.fillStyle = '#888'; 
+  ctx.fillRect(x+w/2-8,y+h/2-2,5,4); ctx.fillRect(x+w/2+3,y+h/2-2,5,4);
+}
+
+function drawComodino(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color||'#c8a870'; ctx.strokeStyle = '#8a6830'; ctx.lineWidth = 1.5;
+  ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h);
+  ctx.strokeStyle = '#7a5820'; ctx.lineWidth = 1;
+  ctx.strokeRect(x+3,y+3,w-6,h-6);
+  ctx.fillStyle = '#888'; ctx.fillRect(x+w/2-4,y+h/2-1,8,2);
+}
+
+function drawScrivania(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color||'#b8a888'; ctx.strokeStyle = '#8a7050'; ctx.lineWidth = 1.5;
+  ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h);
+  // Monitor hint
+  ctx.fillStyle = '#303030'; ctx.fillRect(x+w/2-12,y+4,24,14); 
+  ctx.strokeStyle = '#505050'; ctx.lineWidth = 0.5; ctx.strokeRect(x+w/2-12,y+4,24,14);
+}
+
+function drawTavolo4(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color||'#c8a870'; ctx.strokeStyle = '#8a6830'; ctx.lineWidth = 1.5;
+  ctx.fillRect(x+8,y+8,w-16,h-16); ctx.strokeRect(x+8,y+8,w-16,h-16);
+  // 4 chairs
+  [[x+w/2-8,y,16,8],[x+w/2-8,y+h-8,16,8],[x,y+h/2-8,8,16],[x+w-8,y+h/2-8,8,16]].forEach(([cx,cy,cw,ch]) => {
+    ctx.fillStyle = '#e0c890'; ctx.strokeStyle = '#a08040'; ctx.lineWidth = 1;
+    ctx.fillRect(cx,cy,cw,ch); ctx.strokeRect(cx,cy,cw,ch);
+  });
+}
+
+function drawTavolo6(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color||'#c8a870'; ctx.strokeStyle = '#8a6830'; ctx.lineWidth = 1.5;
+  ctx.fillRect(x+8,y+8,w-16,h-16); ctx.strokeRect(x+8,y+8,w-16,h-16);
+  const cStyle = () => { ctx.fillStyle = '#e0c890'; ctx.strokeStyle = '#a08040'; ctx.lineWidth = 1; };
+  // top/bottom 2
+  [-1,1].forEach(side => {
+    [-1,1].forEach(off => {
+      cStyle();
+      const cx = x+w/2 + off*20 - 8;
+      const cy = side === -1 ? y : y+h-8;
+      ctx.fillRect(cx,cy,16,8); ctx.strokeRect(cx,cy,16,8);
+    });
+  });
+  // sides 1 each
+  [-1,1].forEach(side => {
+    cStyle();
+    ctx.fillRect(side===-1?x:x+w-8, y+h/2-8, 8, 16);
+    ctx.strokeRect(side===-1?x:x+w-8, y+h/2-8, 8, 16);
+  });
+}
+
+function drawVasca(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color||'#e8f4f8'; ctx.strokeStyle = '#8ab0c0'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.roundRect(x,y,w,h,8); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#b8dce8';
+  ctx.beginPath(); ctx.ellipse(x+w/2, y+h/2+4, w/2-8, h/2-10, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#8ab0c0'; ctx.beginPath(); ctx.arc(x+w/2, y+14, 3, 0, Math.PI*2); ctx.fill();
+}
+
+function drawWC(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color||'#f0f0f0'; ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1.5;
+  // Tank
+  ctx.fillRect(x,y,w,h*0.3); ctx.strokeRect(x,y,w,h*0.3);
+  // Bowl
+  ctx.beginPath(); ctx.ellipse(x+w/2,y+h*0.65,w/2-2,h*0.35,0,0,Math.PI*2);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#e0e8f0';
+  ctx.beginPath(); ctx.ellipse(x+w/2,y+h*0.65,w/2-6,h*0.25,0,0,Math.PI*2); ctx.fill();
+}
+
+function drawLavandino(ctx, x, y, w, h, color) {
+  ctx.fillStyle = color||'#e8f4f8'; ctx.strokeStyle = '#8ab0c0'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.roundRect(x,y,w,h,5); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#b8dce8';
+  ctx.beginPath(); ctx.ellipse(x+w/2,y+h/2+4,w/2-5,h/2-6,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#8ab0c0'; ctx.beginPath(); ctx.arc(x+w/2,y+8,2,0,Math.PI*2); ctx.fill();
+}
+
+function drawPianta(ctx, x, y, w, h, color) {
+  ctx.fillStyle = '#c87a40'; ctx.beginPath(); ctx.ellipse(x+w/2,y+h/2,w/2-4,h/2-4,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = color||'#4a8040';
+  [[0,-8],[7,4],[-7,4],[0,0]].forEach(([ox,oy]) => {
+    ctx.beginPath(); ctx.ellipse(x+w/2+ox,y+h/2+oy,5,4,0,0,Math.PI*2); ctx.fill();
+  });
+}
+
+// ── COLOR HELPERS ──────────────────────────────────────────
+function darken(hex, pct) {
+  const c = parseInt(hex.replace('#',''), 16);
+  const r = Math.max(0,((c>>16)&0xff)-pct), g = Math.max(0,((c>>8)&0xff)-pct), b = Math.max(0,(c&0xff)-pct);
+  return `rgb(${r},${g},${b})`;
+}
+function lighten(hex, pct) {
+  const c = parseInt(hex.replace('#',''), 16);
+  const r = Math.min(255,((c>>16)&0xff)+pct), g = Math.min(255,((c>>8)&0xff)+pct), b = Math.min(255,(c&0xff)+pct);
+  return `rgb(${r},${g},${b})`;
+}
+
+// ── HISTORY ────────────────────────────────────────────────
+function saveHistory() { history.push(JSON.stringify(objects)); if(history.length>30) history.shift(); }
+function undoLast() {
+  if (!history.length) return;
+  objects = JSON.parse(history.pop());
+  deselectObj(); render();
+}
+function clearAll() { saveHistory(); objects = []; deselectObj(); render(); }
+
+// ── EXPORT ────────────────────────────────────────────────
+function exportPNG() {
+  deselectObj(); render();
+  const a = document.createElement('a');
+  a.download = 'planimetria.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  setTimeout(() => { if (selected) drawSelection(selected); }, 50);
+}
+
+// ── INIT ──────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
